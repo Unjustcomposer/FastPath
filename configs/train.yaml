@@ -1,0 +1,52 @@
+seed: 42
+
+teacher:
+  backbone: "resnet50"  # or ctranspath / uni
+  feature_dim: 2048
+  pretrained: true
+
+student:
+  backbone: "efficientnet_b0"
+  feature_dim: 128
+  pretrained: true
+
+distillation:
+  alpha: 0.3        # hard-label weight
+  beta: 0.1         # feature-hint weight
+  temperature: 4.0
+
+aggregator:
+  in_dim: 128
+  hidden_dim: 128
+  dropout: 0.25
+
+training:
+  tile_epochs: 30
+  aggregator_epochs: 100
+  tile_batch_size: 256
+  tile_lr: 1e-3
+  tile_min_lr: 1e-6
+  aggregator_lr: 2e-4
+  weight_decay: 1e-4
+  ema_decay: 0.999
+  early_stopping_patience: 7
+  gradient_clip_norm: 1.0
+  warmup_epochs: 3
+  num_workers: 8
+
+augmentation:
+  random_flip: true
+  random_rotation: 90
+  color_jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.1
+    hue: 0.05
+  gaussian_blur_prob: 0.3
+  cutout_prob: 0.25
+  cutout_size: 64
+
+quantisation:
+  precision: "fp16"   # fp16 / fp8 / int8
+  calibration_tiles: 1000
+  max_batch_size: 512

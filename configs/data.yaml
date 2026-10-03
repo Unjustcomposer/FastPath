@@ -1,0 +1,14 @@
+dataset:
+  name: "CAMELYON16"
+  raw_dir: "./data_raw/"
+  processed_dir: "./data_processed/"
+  tile_size: 256
+  target_mag: 20  # Magnification level to extract tiles
+
+tiling:
+  tissue_threshold: 0.1
+  min_tissue_ratio: 0.5  # Keep tiles with >= 50% tissue
+
+stain_norm:
+  method: "macenko"
+  reference_slide: "tumor_001.tif"  # Name of reference slide
