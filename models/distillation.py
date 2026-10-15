@@ -14,8 +14,6 @@ class KDLoss(nn.Module):
     def forward(self, student_logits, teacher_logits, true_labels, student_hints=None, teacher_feats=None):
         if student_logits.dim() == 1:
             student_logits = student_logits.unsqueeze(-1)
-        if teacher_logits.dim() == 1:
-            teacher_logits = teacher_logits.unsqueeze(-1)
         if true_labels.dim() == 1:
             true_labels = true_labels.unsqueeze(-1)
         true_labels = true_labels.float()
@@ -23,8 +21,17 @@ class KDLoss(nn.Module):
         # Hard loss (on ground truth or pseudo-labels)
         hard_loss = self.bce(student_logits, true_labels)
         
-        # Soft loss (on teacher logits smoothed by temperature)
-        soft_targets = torch.sigmoid(teacher_logits / self.T)
+        # Soft loss: seamlessly handle both 1-class and 2-class teacher logits
+        if teacher_logits.dim() == 1:
+            teacher_logits = teacher_logits.unsqueeze(-1)
+
+        if teacher_logits.shape[-1] == 2:
+            # 2-class output: [negative, positive] -> take softmax probability of positive class
+            soft_targets = torch.softmax(teacher_logits / self.T, dim=-1)[:, 1:]
+        else:
+            # 1-class binary logit
+            soft_targets = torch.sigmoid(teacher_logits / self.T)
+
         soft_loss = self.soft_bce(student_logits / self.T, soft_targets)
         
         # Feature Hint Loss: MSE to force student embeddings to map exactly to teacher embeddings
