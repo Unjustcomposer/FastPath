@@ -48,6 +48,8 @@ def main():
             
         # 2. Extract and save tiles to HDF5
         h5_path = os.path.join(out_dir, f"{slide_id}_tiles.h5")
+        if os.path.exists(h5_path):
+            continue
         reader = SlideReader(slide_path)
         try:
             with h5py.File(h5_path, "w") as h5f:
