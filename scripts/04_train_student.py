@@ -40,6 +40,7 @@ logger = logging.getLogger("FastPath-StudentTrainer")
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fold", type=int, default=0, help="Cross-validation fold")
+    parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from")
     parser.add_argument("--local-rank", type=int, default=int(os.environ.get("LOCAL_RANK", -1)), help="Local rank for DDP")
     args, _ = parser.parse_known_args()
 
@@ -149,6 +150,12 @@ def main():
         feature_dim=s_cfg.get("feature_dim", 128),
         teacher_dim=teacher_dim
     ).to(device)
+
+    if args.resume and os.path.exists(args.resume):
+        state_dict = torch.load(args.resume, map_location=device)
+        model.load_state_dict(state_dict, strict=False)
+        if rank == 0:
+            logger.info(f"Successfully resumed model weights from {args.resume}!")
 
     if is_ddp:
         model = DDP(model, device_ids=[args.local_rank], output_device=args.local_rank)
