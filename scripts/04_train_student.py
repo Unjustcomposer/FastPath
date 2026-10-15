@@ -222,7 +222,7 @@ def main():
             scaler.update()
 
             scheduler.step()
-            train_tracker.update(loss.item(), imgs.size(0))
+            train_tracker.update(loss.detach().item(), imgs.size(0))
             
             if rank == 0:
                 ema.update(model.module if is_ddp else model)
@@ -249,8 +249,8 @@ def main():
                         val_loss = nn.BCEWithLogitsLoss()(s_logits, pseudo_labels.float().unsqueeze(-1) if pseudo_labels.dim() == 1 else pseudo_labels.float())
 
                     val_tracker.update(val_loss.item(), imgs.size(0))
-                    all_preds.extend(torch.sigmoid(s_logits).cpu().numpy().flatten())
-                    all_labels.extend(pseudo_labels.cpu().numpy().flatten())
+                    all_preds.extend(torch.sigmoid(s_logits).float().cpu().numpy().flatten())
+                    all_labels.extend(pseudo_labels.float().cpu().numpy().flatten())
 
             ema.restore(model_to_eval)
 
