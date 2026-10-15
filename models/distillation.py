@@ -12,6 +12,14 @@ class KDLoss(nn.Module):
         self.mse = nn.MSELoss()
         
     def forward(self, student_logits, teacher_logits, true_labels, student_hints=None, teacher_feats=None):
+        if student_logits.dim() == 1:
+            student_logits = student_logits.unsqueeze(-1)
+        if teacher_logits.dim() == 1:
+            teacher_logits = teacher_logits.unsqueeze(-1)
+        if true_labels.dim() == 1:
+            true_labels = true_labels.unsqueeze(-1)
+        true_labels = true_labels.float()
+
         # Hard loss (on ground truth or pseudo-labels)
         hard_loss = self.bce(student_logits, true_labels)
         
