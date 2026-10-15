@@ -78,58 +78,59 @@ def get_camelyon16_splits(processed_dir: str, label_csv_path: str, val_ratio: fl
     
     return train_list, val_list, test_list
 
-def get_camelyon16_cv_splits(processed_dir: str, label_csv_path: str, n_splits: int = 5, seed: int = 42) -> List[Dict[str, List[Dict]]]:
+def get_camelyon16_cv_splits(processed_dir: str, label_csv_path: str = None, n_splits: int = 5, seed: int = 42) -> List[Dict[str, List[Dict]]]:
     """
     Returns cross-validation splits for CAMELYON16 slides.
-    
-    Args:
-        processed_dir: Directory containing processed slide H5 files.
-        label_csv_path: Path to the label CSV.
-        n_splits: Number of folds.
-        seed: Random seed for stratified splitting.
-        
-    Returns:
-        List of dictionaries with 'train', 'val', 'test' keys mapping to lists of slide dicts.
+    Discovers all processed H5 tile files directly from processed_dir.
     """
-    labels_dict = load_slide_labels(label_csv_path)
-    
+    labels_dict = {}
+    if label_csv_path and os.path.exists(label_csv_path):
+        try:
+            labels_dict = load_slide_labels(label_csv_path)
+        except Exception:
+            pass
+
+    # Find all tile H5 files in processed_dir
+    h5_files = [f for f in os.listdir(processed_dir) if f.endswith('_tiles.h5') or f.endswith('.h5')]
+    h5_files = [f for f in h5_files if not f.endswith('_features.h5') and not f.endswith('_student_feats.h5')]
+
     train_val_list = []
     test_list = []
-    
-    for slide_id, label in labels_dict.items():
-        h5_path = os.path.join(processed_dir, f"{slide_id}_tiles.h5")
-        if not os.path.exists(h5_path):
-            h5_path = os.path.join(processed_dir, f"{slide_id}.h5")
-        if not os.path.exists(h5_path):
-            logger.warning(f"H5 file not found for slide {slide_id} at {h5_path}. Skipping.")
-            continue
-            
+
+    for f in sorted(h5_files):
+        slide_id = f.replace('_tiles.h5', '').replace('.h5', '')
+        if slide_id in labels_dict:
+            label = labels_dict[slide_id]
+        else:
+            label = 1 if 'tumor' in slide_id.lower() else 0
+
+        h5_path = os.path.join(processed_dir, f)
         slide_info = {'slide_id': slide_id, 'h5_path': h5_path, 'label': label}
-        
+
         if slide_id.startswith('test_'):
             test_list.append(slide_info)
         else:
             train_val_list.append(slide_info)
-            
+
     if not train_val_list:
-        raise ValueError("No training slides found.")
-        
+        raise ValueError("No training slides found in processed_dir.")
+
     slide_ids = [s['slide_id'] for s in train_val_list]
     slide_labels = [s['label'] for s in train_val_list]
-    
+
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
-    
+
     cv_splits = []
     for train_idx, val_idx in skf.split(slide_ids, slide_labels):
         train_list = [train_val_list[i] for i in train_idx]
         val_list = [train_val_list[i] for i in val_idx]
-        
+
         cv_splits.append({
             'train': train_list,
             'val': val_list,
             'test': test_list
         })
-        
+
     return cv_splits
 
 def create_default_label_csv(raw_dir: str, output_csv: str) -> None:
