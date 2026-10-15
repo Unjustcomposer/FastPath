@@ -48,7 +48,9 @@ def get_camelyon16_splits(processed_dir: str, label_csv_path: str, val_ratio: fl
     test_list = []
     
     for slide_id, label in labels_dict.items():
-        h5_path = os.path.join(processed_dir, f"{slide_id}.h5")
+        h5_path = os.path.join(processed_dir, f"{slide_id}_tiles.h5")
+        if not os.path.exists(h5_path):
+            h5_path = os.path.join(processed_dir, f"{slide_id}.h5")
         if not os.path.exists(h5_path):
             logger.warning(f"H5 file not found for slide {slide_id} at {h5_path}. Skipping.")
             continue
@@ -95,7 +97,9 @@ def get_camelyon16_cv_splits(processed_dir: str, label_csv_path: str, n_splits: 
     test_list = []
     
     for slide_id, label in labels_dict.items():
-        h5_path = os.path.join(processed_dir, f"{slide_id}.h5")
+        h5_path = os.path.join(processed_dir, f"{slide_id}_tiles.h5")
+        if not os.path.exists(h5_path):
+            h5_path = os.path.join(processed_dir, f"{slide_id}.h5")
         if not os.path.exists(h5_path):
             logger.warning(f"H5 file not found for slide {slide_id} at {h5_path}. Skipping.")
             continue
