@@ -114,8 +114,13 @@ def main():
     )
 
     t_cfg = train_cfg.get("training", {})
-    batch_size = t_cfg.get("tile_batch_size", 256)
-    num_workers = t_cfg.get("num_workers", 8)
+    batch_size = t_cfg.get("tile_batch_size", 512)
+    num_workers = t_cfg.get("num_workers", 16)
+
+    # Enable maximum NVIDIA GPU performance
+    if torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = True
+        torch.set_float32_matmul_precision("high")
 
     train_sampler = DistributedSampler(train_dataset, shuffle=True) if is_ddp else None
     train_loader = DataLoader(
@@ -124,6 +129,8 @@ def main():
         shuffle=(train_sampler is None),
         num_workers=num_workers,
         pin_memory=True,
+        persistent_workers=(num_workers > 0),
+        prefetch_factor=2 if num_workers > 0 else None,
         worker_init_fn=h5_worker_init_fn,
         drop_last=True,
         sampler=train_sampler
@@ -136,6 +143,8 @@ def main():
         shuffle=False,
         num_workers=num_workers,
         pin_memory=True,
+        persistent_workers=(num_workers > 0),
+        prefetch_factor=2 if num_workers > 0 else None,
         worker_init_fn=h5_worker_init_fn
     ) if rank == 0 else None
 
@@ -211,10 +220,10 @@ def main():
         train_tracker.reset()
 
         for imgs, t_logits, pseudo_labels, t_feats in train_loader:
-            imgs = imgs.to(device)
-            t_logits = t_logits.to(device)
-            pseudo_labels = pseudo_labels.to(device)
-            t_feats = t_feats.to(device)
+            imgs = imgs.to(device, non_blocking=True)
+            t_logits = t_logits.to(device, non_blocking=True)
+            pseudo_labels = pseudo_labels.to(device, non_blocking=True)
+            t_feats = t_feats.to(device, non_blocking=True)
 
             optimizer.zero_grad()
 

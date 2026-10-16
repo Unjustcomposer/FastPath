@@ -23,7 +23,7 @@ aggregator:
 training:
   tile_epochs: 30
   aggregator_epochs: 100
-  tile_batch_size: 256
+  tile_batch_size: 512
   tile_lr: 1e-3
   tile_min_lr: 1e-6
   aggregator_lr: 2e-4
@@ -32,7 +32,7 @@ training:
   early_stopping_patience: 7
   gradient_clip_norm: 1.0
   warmup_epochs: 3
-  num_workers: 8
+  num_workers: 16
 
 augmentation:
   random_flip: true
