@@ -79,17 +79,18 @@ def extract_student_features(
             images = h5f["images"]
             num_tiles = len(images)
 
+            mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
+            std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
+
             with torch.no_grad():
                 for i in range(0, num_tiles, batch_size):
                     batch_np = images[i : i + batch_size]
+                    batch_t = torch.from_numpy(batch_np).to(device, non_blocking=True)
+                    batch_t = batch_t.permute(0, 3, 1, 2).float().div_(255.0).sub_(mean).div_(std)
 
-                    batch_tensors = []
-                    for tile in batch_np:
-                        batch_tensors.append(transform(tile))
-                    batch = torch.stack(batch_tensors).to(device)
-
-                    _, feats = student(batch)
-                    all_feats.append(feats.cpu().numpy())
+                    with torch.amp.autocast("cuda", dtype=torch.float16):
+                        _, feats = student(batch_t)
+                    all_feats.append(feats.float().cpu().numpy())
 
         if all_feats:
             all_feats = np.concatenate(all_feats, axis=0)
