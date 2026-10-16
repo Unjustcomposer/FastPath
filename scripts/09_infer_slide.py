@@ -36,10 +36,15 @@ logger = logging.getLogger("FastPath-Inference")
 def load_student_pytorch(checkpoint_dir: str, device: torch.device) -> StudentModel:
     """Loads the student model from a PyTorch checkpoint."""
     model = StudentModel(num_classes=1, pretrained=False, feature_dim=128, teacher_dim=2048).to(device)
-    ckpt_path = os.path.join(checkpoint_dir, "student_best.pt")
-    if not os.path.exists(ckpt_path):
-        ckpt_path = os.path.join(checkpoint_dir, "student_final.pt")
-    if os.path.exists(ckpt_path):
+    candidates = [
+        "student_ema_best_fold0.pt",
+        "student_best_fold0.pt",
+        "student_final_fold0.pt",
+        "student_best.pt",
+        "student_final.pt",
+    ]
+    ckpt_path = next((os.path.join(checkpoint_dir, c) for c in candidates if os.path.exists(os.path.join(checkpoint_dir, c))), None)
+    if ckpt_path:
         model.load_state_dict(torch.load(ckpt_path, map_location=device))
         logger.info(f"Loaded student weights from {ckpt_path}")
     else:
@@ -51,10 +56,13 @@ def load_student_pytorch(checkpoint_dir: str, device: torch.device) -> StudentMo
 def load_aggregator(checkpoint_dir: str, device: torch.device) -> AttentionAggregator:
     """Loads the attention aggregator from a PyTorch checkpoint."""
     model = AttentionAggregator(in_dim=128, hidden_dim=128, num_classes=1).to(device)
-    ckpt_path = os.path.join(checkpoint_dir, "aggregator_best.pt")
-    if not os.path.exists(ckpt_path):
-        ckpt_path = os.path.join(checkpoint_dir, "aggregator_latest.pt")
-    if os.path.exists(ckpt_path):
+    candidates = [
+        "aggregator_best_fold0.pt",
+        "aggregator_best.pt",
+        "aggregator_latest.pt",
+    ]
+    ckpt_path = next((os.path.join(checkpoint_dir, c) for c in candidates if os.path.exists(os.path.join(checkpoint_dir, c))), None)
+    if ckpt_path:
         model.load_state_dict(torch.load(ckpt_path, map_location=device))
         logger.info(f"Loaded aggregator weights from {ckpt_path}")
     else:
